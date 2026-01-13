@@ -62,7 +62,7 @@ export function CarouselCustomNavigation() {
 
   return (
     <div className="relative w-full rounded-xl overflow-hidden">
-      <div className="relative w-full h-[28rem] md:h-[36rem]">
+      <div className="relative w-full h-[20rem] sm:h-[24rem] md:h-[28rem] lg:h-[36rem]">
         {slides.map((slide, i) => (
           <div
             key={i}
@@ -90,20 +90,20 @@ export function CarouselCustomNavigation() {
       <button
         aria-label="Previous"
         onClick={() => setActive((a) => (a === 0 ? slides.length - 1 : a - 1))}
-        className="absolute left-4 top-1/2 -translate-y-1/2 bg-white/60 hover:bg-white/80 rounded-full p-3 shadow"
+        className="absolute left-4 sm:left-3 md:left-4 top-1/2 -translate-y-1/2 bg-white/60 hover:bg-white/80 rounded-full p-2 sm:p-3 shadow text-lg sm:text-xl"
       >
         &#8592;
       </button>
       <button
         aria-label="Next"
         onClick={() => setActive((a) => (a + 1) % slides.length)}
-        className="absolute right-4 top-1/2 -translate-y-1/2 bg-white/60 hover:bg-white/80 rounded-full p-3 shadow"
+        className="absolute right-4 sm:right-3 md:right-4 top-1/2 -translate-y-1/2 bg-white/60 hover:bg-white/80 rounded-full p-2 sm:p-3 shadow text-lg sm:text-xl"
       >
         &#8594;
       </button>
 
       {/* Dots */}
-      <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2 z-30">
+      <div className="absolute bottom-2 sm:bottom-3 md:bottom-4 left-1/2 -translate-x-1/2 flex gap-1.5 sm:gap-2 z-30">
         {slides.map((_, i) => (
           <button
             key={i}
@@ -119,25 +119,25 @@ export function CarouselCustomNavigation() {
 
 export default function HealthImplications() {
   return (
-    <section id="health-implications" className="py-20 bg-gradient-to-br from-gray-50 to-purple-50 dark:from-gray-900 dark:to-gray-800 min-h-screen">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <section id="health-implications" className="py-12 sm:py-16 md:py-20 bg-gradient-to-br from-gray-50 to-purple-50 dark:from-gray-900 dark:to-gray-800 min-h-screen">
+      <div className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-8">
         {/* Intro Section (exact text, do not paraphrase) */}
-        <div className="text-center mb-14">
-          <h2 className="text-4xl md:text-5xl font-extrabold text-gray-900 dark:text-white mb-4 tracking-tight">
+        <div className="text-center mb-8 sm:mb-10 md:mb-14">
+          <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-extrabold text-gray-900 dark:text-white mb-3 sm:mb-4 tracking-tight">
             Health Implications and Complications
           </h2>
-          <div className="w-32 h-1 bg-gradient-to-r from-pink-500 to-purple-600 mx-auto mb-8 rounded-full"></div>
-          <div className="text-xl text-gray-700 dark:text-gray-300 max-w-3xl mx-auto mb-6">
-            Polycystic Ovary Syndrome (PCOS) is a common hormonal disorder that affects about<br />
-            one in five women. It causes problems with reproduction, metabolism, and emotional well-being,<br />
-            making it a long-term health concern. Because many students lack access to consistent health<br />
-            education and support, a web-based intervention can help them manage symptoms and<br />
+          <div className="w-24 sm:w-32 h-1 bg-gradient-to-r from-pink-500 to-purple-600 mx-auto mb-4 sm:mb-6 md:mb-8 rounded-full"></div>
+          <div className="text-sm sm:text-base md:text-lg lg:text-xl text-gray-700 dark:text-gray-300 max-w-3xl mx-auto mb-4 sm:mb-6">
+            Polycystic Ovary Syndrome (PCOS) is a common hormonal disorder that affects about<br className="hidden sm:block" />
+            one in five women. It causes problems with reproduction, metabolism, and emotional well-being,<br className="hidden sm:block" />
+            making it a long-term health concern. Because many students lack access to consistent health<br className="hidden sm:block" />
+            education and support, a web-based intervention can help them manage symptoms and<br className="hidden sm:block" />
             understand their condition better.
           </div>
         </div>
 
         {/* Material Tailwind Carousel Integration */}
-        <div className="flex flex-col items-center mb-16">
+        <div className="flex flex-col items-center mb-8 sm:mb-12 md:mb-16">
           <div className="w-full max-w-5xl">
             <CarouselCustomNavigation />
           </div>

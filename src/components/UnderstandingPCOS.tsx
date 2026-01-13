@@ -142,13 +142,13 @@ export default function UnderstandingPCOS() {
     ];
 
     return (
-        <section id="understanding" className="py-10 md:py-20 bg-white dark:bg-gray-900">
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                <div className="text-center mb-8 md:mb-16">
-                    <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold text-gray-900 dark:text-white mb-3 md:mb-4">
+        <section id="understanding" className="py-8 sm:py-12 md:py-20 bg-white dark:bg-gray-900">
+            <div className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-8">
+                <div className="text-center mb-6 sm:mb-8 md:mb-16">
+                    <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-gray-900 dark:text-white mb-2 sm:mb-3 md:mb-4">
                         Understanding PCOS
                     </h2>
-                    <div className="w-20 md:w-24 h-1 bg-gradient-to-r from-pink-500 to-purple-600 mx-auto"></div>
+                    <div className="w-16 sm:w-20 md:w-24 h-1 bg-gradient-to-r from-pink-500 to-purple-600 mx-auto"></div>
                 </div>
 
                 {/* Horizontal Accordion - Desktop */}
@@ -239,7 +239,7 @@ export default function UnderstandingPCOS() {
                 </div>
 
                 {/* Vertical Accordion - Mobile */}
-                <div className="md:hidden space-y-3">
+                <div className="md:hidden space-y-2 sm:space-y-3">
                     {panels.map((panel, index) => (
                         <div
                             key={index}
@@ -252,7 +252,7 @@ export default function UnderstandingPCOS() {
                                     activeIndex === index ? 'pb-0' : 'pb-4'
                                 }`}
                             >
-                                <div className={`relative bg-gradient-to-br ${panel.gradient} p-4 flex items-center justify-between`}>
+                                <div className={`relative bg-gradient-to-br ${panel.gradient} p-3 sm:p-4 flex items-center justify-between`}>
                                     {/* Pattern Overlay */}
                                     <div className="absolute inset-0 opacity-10"
                                         style={{
@@ -261,13 +261,13 @@ export default function UnderstandingPCOS() {
                                         }}
                                     />
                                     
-                                    <div className="flex items-center gap-3 z-10">
-                                        <span className="text-2xl">{panel.icon}</span>
-                                        <span className="text-white font-semibold text-sm">{panel.title}</span>
+                                    <div className="flex items-center gap-2 sm:gap-3 z-10">
+                                        <span className="text-lg sm:text-2xl">{panel.icon}</span>
+                                        <span className="text-white font-semibold text-xs sm:text-sm">{panel.title}</span>
                                     </div>
                                     
                                     <svg
-                                        className={`w-5 h-5 text-white transition-transform duration-300 z-10 ${
+                                        className={`w-4 sm:w-5 h-4 sm:h-5 text-white transition-transform duration-300 z-10 ${
                                             activeIndex === index ? 'rotate-180' : ''
                                         }`}
                                         fill="none"
@@ -285,9 +285,9 @@ export default function UnderstandingPCOS() {
                                     activeIndex === index ? 'max-h-[500px] opacity-100' : 'max-h-0 opacity-0'
                                 }`}
                             >
-                                <div className={`bg-gradient-to-br ${panel.gradient} p-4 text-white`}>
+                                <div className={`bg-gradient-to-br ${panel.gradient} p-3 sm:p-4 text-white`}>
                                     {/* Dark overlay for better readability */}
-                                    <div className="bg-black/40 backdrop-blur-sm p-4 rounded-lg">
+                                    <div className="bg-black/40 backdrop-blur-sm p-3 sm:p-4 rounded-lg">
                                         {panel.content}
                                     </div>
                                 </div>
