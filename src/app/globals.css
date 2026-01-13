@@ -50,3 +50,60 @@ html {
 		opacity: 1;
 	}
 }
+/* Mobile menu slide animations */
+.mobile-menu-enter {
+  animation: slideDown 300ms ease-out forwards;
+}
+
+.mobile-menu-exit {
+  animation: slideUp 250ms ease-in forwards;
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-100%);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  to {
+    opacity: 0;
+    transform: translateY(-100%);
+  }
+}
+
+/* Burger icon rotation animation */
+.burger-icon-open {
+  animation: burgerRotate 300ms ease-out forwards;
+}
+
+.burger-icon-close {
+  animation: burgerRotateBack 250ms ease-in forwards;
+}
+
+@keyframes burgerRotate {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(90deg);
+  }
+}
+
+@keyframes burgerRotateBack {
+  from {
+    transform: rotate(90deg);
+  }
+  to {
+    transform: rotate(0deg);
+  }
+}
