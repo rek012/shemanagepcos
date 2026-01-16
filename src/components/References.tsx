@@ -27,13 +27,13 @@ export default function References() {
   ];
 
   return (
-    <section id="references" className="py-12 sm:py-16 md:py-20 bg-gray-900 text-white">
+    <section id="references" className="py-12 sm:py-16 md:py-20" style={{ backgroundColor: '#7F5561', color: '#FFE1E0' }}>
       <div className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-8">
         <div className="text-center mb-8 sm:mb-12">
           <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold mb-3 sm:mb-4">
             References
           </h2>
-          <div className="w-20 sm:w-24 h-1 bg-gradient-to-r from-pink-500 to-purple-600 mx-auto mb-4 sm:mb-6"></div>
+          <div className="w-20 sm:w-24 h-1 mx-auto mb-4 sm:mb-6" style={{ background: 'linear-gradient(to right, #F49BAB, #9B7EBD)' }}></div>
           <p className="text-sm sm:text-base md:text-lg lg:text-xl text-gray-300 max-w-3xl mx-auto">
             Evidence-based information from trusted medical sources
           </p>
@@ -46,11 +46,12 @@ export default function References() {
               href={ref.url}
               target="_blank"
               rel="noopener noreferrer"
-              className="bg-gray-800 rounded-xl p-6 hover:bg-gray-700 transition-all transform hover:scale-105 hover:shadow-xl border border-gray-700 hover:border-pink-500"
+              className="rounded-xl p-6 transition-all transform hover:scale-105 hover:shadow-xl"
+              style={{ backgroundColor: '#9B7EBD', border: '1px solid #F49BAB' }}
             >
               <div className="flex items-start justify-between">
                 <div className="flex-1">
-                  <h3 className="text-lg font-semibold text-white mb-2 group-hover:text-pink-400">
+                  <h3 className="text-lg font-semibold mb-2" style={{ color: '#FFE1E0' }}>
                     {ref.title}
                   </h3>
                   <p className="text-gray-400 text-sm mb-1">{ref.source}</p>
@@ -64,8 +65,8 @@ export default function References() {
           ))}
         </div>
 
-        <div className="text-center border-t border-gray-800 pt-12">
-          <p className="text-gray-400 mb-4">
+        <div className="text-center pt-12" style={{ borderTop: '1px solid #9B7EBD' }}>
+          <p className="mb-4" style={{ color: '#FFE1E0' }}>
             © {new Date().getFullYear()} SheManagePCOS. All rights reserved.
           </p>
           <p className="text-gray-500 text-sm max-w-2xl mx-auto">

@@ -142,10 +142,10 @@ export default function UnderstandingPCOS() {
     ];
 
     return (
-        <section id="understanding" className="py-8 sm:py-12 md:py-20 bg-white dark:bg-gray-900">
+        <section id="understanding" className="py-8 sm:py-12 md:py-20" style={{ backgroundColor: '#FFE1E0' }}>
             <div className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-8">
                 <div className="text-center mb-6 sm:mb-8 md:mb-16">
-                    <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-gray-900 dark:text-white mb-2 sm:mb-3 md:mb-4">
+                    <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold mb-2 sm:mb-3 md:mb-4" style={{ color: '#7F5561' }}>
                         Understanding PCOS
                     </h2>
                     <div className="w-16 sm:w-20 md:w-24 h-1 bg-gradient-to-r from-pink-500 to-purple-600 mx-auto"></div>

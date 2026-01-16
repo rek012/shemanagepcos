@@ -33,14 +33,14 @@ export default function LifestyleManagement() {
   ];
 
   return (
-    <section id="lifestyle" className="py-12 sm:py-16 md:py-20 bg-white dark:bg-gray-900">
+    <section id="lifestyle" className="py-12 sm:py-16 md:py-20" style={{ backgroundColor: '#7F5561' }}>
       <div className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-8">
         <div className="text-center mb-8 sm:mb-12">
-          <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-gray-900 dark:text-white mb-3 sm:mb-4">
+          <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold mb-3 sm:mb-4" style={{ color: '#FFE1E0' }}>
             Lifestyle Management
           </h2>
-          <div className="w-20 sm:w-24 h-1 bg-gradient-to-r from-pink-500 to-purple-600 mx-auto mb-4 sm:mb-6"></div>
-          <p className="text-sm sm:text-base md:text-lg lg:text-xl text-gray-700 dark:text-gray-300 max-w-3xl mx-auto">
+          <div className="w-20 sm:w-24 h-1 mx-auto mb-4 sm:mb-6" style={{ background: 'linear-gradient(to right, #F49BAB, #9B7EBD)' }}></div>
+          <p className="text-sm sm:text-base md:text-lg lg:text-xl text-gray-700 max-w-3xl mx-auto">
             Small, consistent changes in daily habits can make a significant impact on managing PCOS symptoms.
           </p>
         </div>
@@ -49,15 +49,16 @@ export default function LifestyleManagement() {
           {tips.map((tip, index) => (
             <div
               key={index}
-              className="bg-gradient-to-br from-pink-50 to-purple-50 dark:from-gray-800 dark:to-gray-800 rounded-2xl p-8 transform hover:scale-105 transition-all hover:shadow-xl border border-pink-100 dark:border-pink-900/30"
+              className="rounded-2xl p-8 transform hover:scale-105 transition-all hover:shadow-xl"
+              style={{ background: 'linear-gradient(to bottom right, #FFE1E0, #F49BAB)', border: '1px solid #9B7EBD' }}
             >
               <div className="text-5xl mb-4 transform hover:scale-125 transition-transform">
                 {tip.icon}
               </div>
-              <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-3">
+              <h3 className="text-xl font-semibold mb-3" style={{ color: '#7F5561' }}>
                 {tip.title}
               </h3>
-              <p className="text-gray-700 dark:text-gray-300 leading-relaxed">
+              <p className="text-gray-700 leading-relaxed">
                 {tip.description}
               </p>
             </div>

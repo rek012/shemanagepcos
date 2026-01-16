@@ -16,11 +16,11 @@ export default function Navbar() {
   ];
 
   return (
-    <nav className="sticky top-0 z-50 bg-white/80 dark:bg-gray-900/80 backdrop-blur-lg border-b border-gray-200 dark:border-gray-800 shadow-sm">
+    <nav className="sticky top-0 z-50 backdrop-blur-lg border-b shadow-sm" style={{ backgroundColor: 'rgba(255, 225, 224, 0.9)', borderColor: '#9B7EBD' }}>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-20">
           <div className="flex items-center">
-            <Link href="/" className="text-2xl font-bold bg-gradient-to-r from-pink-500 to-purple-600 bg-clip-text text-transparent hover:from-pink-600 hover:to-purple-700 transition-all hover:scale-110 active:scale-95">
+            <Link href="/" className="text-2xl font-bold transition-all hover:scale-110 active:scale-95" style={{ background: 'linear-gradient(to right, #F49BAB, #9B7EBD)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }}>
               SheManagePCOS
             </Link>
           </div>
@@ -30,7 +30,8 @@ export default function Navbar() {
               <Link 
                 key={item.name}
                 href={item.href} 
-                className="text-gray-700 dark:text-gray-300 hover:text-pink-600 dark:hover:text-pink-400 px-4 py-2 rounded-lg text-sm font-medium transition-all hover:bg-pink-50 dark:hover:bg-pink-900/20 hover:scale-105 hover:-translate-y-0.5 active:scale-95"
+                className="px-4 py-2 rounded-lg text-sm font-medium transition-all hover:scale-105 hover:-translate-y-0.5 active:scale-95"
+                style={{ color: '#7F5561' }}
               >
                 {item.name}
               </Link>
@@ -42,7 +43,8 @@ export default function Navbar() {
             <button
               type="button"
               onClick={() => setIsOpen(!isOpen)}
-              className="text-gray-700 dark:text-gray-300 hover:text-pink-600 dark:hover:text-pink-400 p-2 rounded-lg hover:bg-pink-50 dark:hover:bg-pink-900/20 transition-all"
+              className="p-2 rounded-lg transition-all"
+              style={{ color: '#7F5561' }}
               aria-label="Toggle menu"
             >
               {isOpen ? (
@@ -67,7 +69,8 @@ export default function Navbar() {
                   key={item.name}
                   href={item.href}
                   onClick={() => setIsOpen(false)}
-                  className="text-gray-700 dark:text-gray-300 hover:text-pink-600 dark:hover:text-pink-400 px-4 py-3 rounded-lg text-sm font-medium transition-all hover:bg-pink-50 dark:hover:bg-pink-900/20"
+                  className="px-4 py-3 rounded-lg text-sm font-medium transition-all"
+                  style={{ color: '#7F5561' }}
                 >
                   {item.name}
                 </Link>

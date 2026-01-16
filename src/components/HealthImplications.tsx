@@ -119,15 +119,15 @@ export function CarouselCustomNavigation() {
 
 export default function HealthImplications() {
   return (
-    <section id="health-implications" className="py-12 sm:py-16 md:py-20 bg-gradient-to-br from-gray-50 to-purple-50 dark:from-gray-900 dark:to-gray-800 min-h-screen">
+    <section id="health-implications" className="py-12 sm:py-16 md:py-20 min-h-screen" style={{ background: 'linear-gradient(to bottom right, #FFE1E0, #9B7EBD)' }}>
       <div className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-8">
         {/* Intro Section (exact text, do not paraphrase) */}
         <div className="text-center mb-8 sm:mb-10 md:mb-14">
-          <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-extrabold text-gray-900 dark:text-white mb-3 sm:mb-4 tracking-tight">
+          <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-extrabold mb-3 sm:mb-4 tracking-tight" style={{ color: '#7F5561' }}>
             Health Implications and Complications
           </h2>
-          <div className="w-24 sm:w-32 h-1 bg-gradient-to-r from-pink-500 to-purple-600 mx-auto mb-4 sm:mb-6 md:mb-8 rounded-full"></div>
-          <div className="text-sm sm:text-base md:text-lg lg:text-xl text-gray-700 dark:text-gray-300 max-w-3xl mx-auto mb-4 sm:mb-6">
+          <div className="w-24 sm:w-32 h-1 mx-auto mb-4 sm:mb-6 md:mb-8 rounded-full" style={{ background: 'linear-gradient(to right, #F49BAB, #9B7EBD)' }}></div>
+          <div className="text-sm sm:text-base md:text-lg lg:text-xl text-gray-700 max-w-3xl mx-auto mb-4 sm:mb-6">
             Polycystic Ovary Syndrome (PCOS) is a common hormonal disorder that affects about<br className="hidden sm:block" />
             one in five women. It causes problems with reproduction, metabolism, and emotional well-being,<br className="hidden sm:block" />
             making it a long-term health concern. Because many students lack access to consistent health<br className="hidden sm:block" />
