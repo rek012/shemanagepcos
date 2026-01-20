@@ -11,20 +11,13 @@ interface User {
   created_at: string;
 }
 
-// Fallback users for when D1 is unavailable
-const FALLBACK_USERS = [
-  { id: 1, email: 'admin@pcos.com', username: 'Admin', user_type: 'admin' as const, created_at: '2026-01-20 00:00:00' },
-  { id: 2, email: 'user@pcos.com', username: 'User', user_type: 'user' as const, created_at: '2026-01-20 00:00:00' }
-];
-
-async function getDatabase(): Promise<D1Database | null> {
-  try {
-    const ctx = await getCloudflareContext();
-    return (ctx.env as { dbbindings?: D1Database }).dbbindings || null;
-  } catch (e) {
-    console.log('Cloudflare context not available:', e);
-    return null;
+async function getDatabase(): Promise<D1Database> {
+  const ctx = await getCloudflareContext();
+  const db = (ctx.env as { dbbindings?: D1Database }).dbbindings;
+  if (!db) {
+    throw new Error('D1 database binding not found');
   }
+  return db;
 }
 
 // GET all users
@@ -32,21 +25,13 @@ export async function GET() {
   try {
     const db = await getDatabase();
 
-    if (db) {
-      const users = await db
-        .prepare('SELECT id, email, username, user_type, created_at FROM users ORDER BY created_at DESC')
-        .all<User>();
+    const users = await db
+      .prepare('SELECT id, email, username, user_type, created_at FROM users ORDER BY created_at DESC')
+      .all<User>();
 
-      return NextResponse.json({
-        success: true,
-        users: users.results || []
-      });
-    }
-
-    // Fallback
     return NextResponse.json({
       success: true,
-      users: FALLBACK_USERS
+      users: users.results || []
     });
   } catch (error) {
     console.error('Error fetching users:', error);
@@ -77,13 +62,6 @@ export async function POST(request: NextRequest) {
     }
 
     const db = await getDatabase();
-
-    if (!db) {
-      return NextResponse.json(
-        { error: 'Database not available' },
-        { status: 503 }
-      );
-    }
 
     // Check if user already exists
     const existingUser = await db
@@ -139,13 +117,6 @@ export async function PUT(request: NextRequest) {
     }
 
     const db = await getDatabase();
-
-    if (!db) {
-      return NextResponse.json(
-        { error: 'Database not available' },
-        { status: 503 }
-      );
-    }
 
     // Build update query dynamically
     const updates: string[] = [];
@@ -210,13 +181,6 @@ export async function DELETE(request: NextRequest) {
     }
 
     const db = await getDatabase();
-
-    if (!db) {
-      return NextResponse.json(
-        { error: 'Database not available' },
-        { status: 503 }
-      );
-    }
 
     // Don't allow deleting the default admin
     const user = await db
