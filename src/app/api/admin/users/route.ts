@@ -11,26 +11,42 @@ interface User {
   created_at: string;
 }
 
+// Fallback users for when D1 is unavailable
+const FALLBACK_USERS = [
+  { id: 1, email: 'admin@pcos.com', username: 'Admin', user_type: 'admin' as const, created_at: '2026-01-20 00:00:00' },
+  { id: 2, email: 'user@pcos.com', username: 'User', user_type: 'user' as const, created_at: '2026-01-20 00:00:00' }
+];
+
+async function getDatabase(): Promise<D1Database | null> {
+  try {
+    const ctx = await getCloudflareContext();
+    return (ctx.env as { dbbindings?: D1Database }).dbbindings || null;
+  } catch (e) {
+    console.log('Cloudflare context not available:', e);
+    return null;
+  }
+}
+
 // GET all users
 export async function GET() {
   try {
-    const { env } = await getCloudflareContext();
-    const db = (env as { dbbindings?: D1Database }).dbbindings;
+    const db = await getDatabase();
 
-    if (!db) {
-      return NextResponse.json(
-        { error: 'Database binding not found' },
-        { status: 500 }
-      );
+    if (db) {
+      const users = await db
+        .prepare('SELECT id, email, username, user_type, created_at FROM users ORDER BY created_at DESC')
+        .all<User>();
+
+      return NextResponse.json({
+        success: true,
+        users: users.results || []
+      });
     }
 
-    const users = await db
-      .prepare('SELECT id, email, username, user_type, created_at FROM users ORDER BY created_at DESC')
-      .all<User>();
-
+    // Fallback
     return NextResponse.json({
       success: true,
-      users: users.results || []
+      users: FALLBACK_USERS
     });
   } catch (error) {
     console.error('Error fetching users:', error);
@@ -44,12 +60,14 @@ export async function GET() {
 // POST create new user
 export async function POST(request: NextRequest) {
   try {
-    const { email, password, username, userType } = await request.json() as {
+    const body = await request.json() as {
       email: string;
       password: string;
       username: string;
       userType?: 'admin' | 'user';
     };
+
+    const { email, password, username, userType } = body;
 
     if (!email || !password || !username) {
       return NextResponse.json(
@@ -58,13 +76,12 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const { env } = await getCloudflareContext();
-    const db = (env as { dbbindings?: D1Database }).dbbindings;
+    const db = await getDatabase();
 
     if (!db) {
       return NextResponse.json(
-        { error: 'Database binding not found' },
-        { status: 500 }
+        { error: 'Database not available' },
+        { status: 503 }
       );
     }
 
@@ -83,9 +100,7 @@ export async function POST(request: NextRequest) {
 
     // Insert new user
     const result = await db
-      .prepare(
-        'INSERT INTO users (email, password, username, user_type) VALUES (?, ?, ?, ?)'
-      )
+      .prepare('INSERT INTO users (email, password, username, user_type) VALUES (?, ?, ?, ?)')
       .bind(email, password, username, userType || 'user')
       .run();
 
@@ -98,6 +113,84 @@ export async function POST(request: NextRequest) {
     console.error('Error creating user:', error);
     return NextResponse.json(
       { error: 'Failed to create user', details: String(error) },
+      { status: 500 }
+    );
+  }
+}
+
+// PUT update user
+export async function PUT(request: NextRequest) {
+  try {
+    const body = await request.json() as {
+      id: number;
+      email?: string;
+      password?: string;
+      username?: string;
+      userType?: 'admin' | 'user';
+    };
+
+    const { id, email, password, username, userType } = body;
+
+    if (!id) {
+      return NextResponse.json(
+        { error: 'User ID is required' },
+        { status: 400 }
+      );
+    }
+
+    const db = await getDatabase();
+
+    if (!db) {
+      return NextResponse.json(
+        { error: 'Database not available' },
+        { status: 503 }
+      );
+    }
+
+    // Build update query dynamically
+    const updates: string[] = [];
+    const values: (string | number)[] = [];
+
+    if (email) {
+      updates.push('email = ?');
+      values.push(email);
+    }
+    if (password) {
+      updates.push('password = ?');
+      values.push(password);
+    }
+    if (username) {
+      updates.push('username = ?');
+      values.push(username);
+    }
+    if (userType) {
+      updates.push('user_type = ?');
+      values.push(userType);
+    }
+    
+    updates.push('updated_at = CURRENT_TIMESTAMP');
+    values.push(id);
+
+    if (updates.length === 1) {
+      return NextResponse.json(
+        { error: 'No fields to update' },
+        { status: 400 }
+      );
+    }
+
+    await db
+      .prepare(`UPDATE users SET ${updates.join(', ')} WHERE id = ?`)
+      .bind(...values)
+      .run();
+
+    return NextResponse.json({
+      success: true,
+      message: 'User updated successfully'
+    });
+  } catch (error) {
+    console.error('Error updating user:', error);
+    return NextResponse.json(
+      { error: 'Failed to update user', details: String(error) },
       { status: 500 }
     );
   }
@@ -116,13 +209,25 @@ export async function DELETE(request: NextRequest) {
       );
     }
 
-    const { env } = await getCloudflareContext();
-    const db = (env as { dbbindings?: D1Database }).dbbindings;
+    const db = await getDatabase();
 
     if (!db) {
       return NextResponse.json(
-        { error: 'Database binding not found' },
-        { status: 500 }
+        { error: 'Database not available' },
+        { status: 503 }
+      );
+    }
+
+    // Don't allow deleting the default admin
+    const user = await db
+      .prepare('SELECT email FROM users WHERE id = ?')
+      .bind(parseInt(userId))
+      .first<{ email: string }>();
+
+    if (user?.email === 'admin@pcos.com') {
+      return NextResponse.json(
+        { error: 'Cannot delete the default admin user' },
+        { status: 403 }
       );
     }
 

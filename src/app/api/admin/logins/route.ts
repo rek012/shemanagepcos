@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { getCloudflareContext } from '@opennextjs/cloudflare';
 
 export const runtime = 'edge';
 
@@ -17,18 +18,7 @@ interface HourlyCount {
   count: number;
 }
 
-async function getDatabase(): Promise<D1Database | null> {
-  try {
-    const { getCloudflareContext } = await import('@opennextjs/cloudflare');
-    const { env } = await getCloudflareContext();
-    return (env as { dbbindings?: D1Database }).dbbindings || null;
-  } catch {
-    // Cloudflare context not available (local dev without Miniflare)
-    return null;
-  }
-}
-
-// Generate mock data for local development
+// Generate mock data for when D1 is unavailable
 function generateMockData(date: string, limit: number) {
   const mockLogins: Array<{
     id: string;
@@ -43,8 +33,7 @@ function generateMockData(date: string, limit: number) {
   const now = new Date(date);
   const devices = ['Chrome', 'Firefox', 'Safari', 'Edge'];
   
-  // Generate random logins
-  for (let i = 0; i < Math.min(limit, 20); i++) {
+  for (let i = 0; i < Math.min(limit, 15); i++) {
     const randomHour = Math.floor(Math.random() * 24);
     const randomMinute = Math.floor(Math.random() * 60);
     const loginDate = new Date(now);
@@ -53,22 +42,18 @@ function generateMockData(date: string, limit: number) {
     mockLogins.push({
       id: `login-${i + 1}`,
       userId: `user-${Math.floor(Math.random() * 5) + 1}`,
-      username: ['Admin', 'User', 'TestUser'][Math.floor(Math.random() * 3)],
-      email: ['admin@pcos.com', 'user@pcos.com', 'test@pcos.com'][Math.floor(Math.random() * 3)],
+      username: ['Admin', 'User'][Math.floor(Math.random() * 2)],
+      email: ['admin@pcos.com', 'user@pcos.com'][Math.floor(Math.random() * 2)],
       loginTime: loginDate.toISOString(),
       ipAddress: `192.168.${Math.floor(Math.random() * 255)}.${Math.floor(Math.random() * 255)}`,
       device: devices[Math.floor(Math.random() * 4)]
     });
   }
 
-  // Sort by login time descending
   mockLogins.sort((a, b) => new Date(b.loginTime).getTime() - new Date(a.loginTime).getTime());
 
-  // Calculate hourly distribution
   const hourlyMap = new Map<number, number>();
-  for (let i = 0; i < 24; i++) {
-    hourlyMap.set(i, 0);
-  }
+  for (let i = 0; i < 24; i++) hourlyMap.set(i, 0);
   
   mockLogins.forEach(login => {
     const hour = new Date(login.loginTime).getHours();
@@ -77,10 +62,7 @@ function generateMockData(date: string, limit: number) {
 
   const hourlyData: HourlyCount[] = [];
   for (let i = 0; i < 24; i++) {
-    hourlyData.push({
-      hour: i,
-      count: hourlyMap.get(i) || 0
-    });
+    hourlyData.push({ hour: i, count: hourlyMap.get(i) || 0 });
   }
 
   return {
@@ -101,11 +83,16 @@ export async function GET(request: NextRequest) {
     const date = searchParams.get('date') || new Date().toISOString().split('T')[0];
     const limit = parseInt(searchParams.get('limit') || '50');
 
-    const db = await getDatabase();
+    // Try to get D1 database
+    let db: D1Database | null = null;
+    try {
+      const ctx = await getCloudflareContext();
+      db = (ctx.env as { dbbindings?: D1Database }).dbbindings || null;
+    } catch (e) {
+      console.log('Cloudflare context not available:', e);
+    }
 
-    // If database is available, use it
     if (db) {
-      // Get recent logins
       const logins = await db
         .prepare(`
           SELECT id, user_id, username, email, login_time, ip_address, device
@@ -116,57 +103,35 @@ export async function GET(request: NextRequest) {
         .bind(limit)
         .all<LoginRecord>();
 
-      // Get total login count
       const totalResult = await db
         .prepare('SELECT COUNT(*) as count FROM login_history')
         .first<{ count: number }>();
 
-      // Get today's login count
       const todayResult = await db
-        .prepare(`
-          SELECT COUNT(*) as count FROM login_history 
-          WHERE DATE(login_time) = DATE('now')
-        `)
+        .prepare(`SELECT COUNT(*) as count FROM login_history WHERE DATE(login_time) = DATE('now')`)
         .first<{ count: number }>();
 
-      // Get this week's login count
       const weekResult = await db
-        .prepare(`
-          SELECT COUNT(*) as count FROM login_history 
-          WHERE login_time >= DATE('now', '-7 days')
-        `)
+        .prepare(`SELECT COUNT(*) as count FROM login_history WHERE login_time >= DATE('now', '-7 days')`)
         .first<{ count: number }>();
 
-      // Get this month's login count
       const monthResult = await db
-        .prepare(`
-          SELECT COUNT(*) as count FROM login_history 
-          WHERE login_time >= DATE('now', '-30 days')
-        `)
+        .prepare(`SELECT COUNT(*) as count FROM login_history WHERE login_time >= DATE('now', '-30 days')`)
         .first<{ count: number }>();
 
-      // Get hourly distribution for the selected date
       const hourlyData = await db
         .prepare(`
-          SELECT 
-            CAST(strftime('%H', login_time) AS INTEGER) as hour,
-            COUNT(*) as count
-          FROM login_history
-          WHERE DATE(login_time) = ?
-          GROUP BY hour
-          ORDER BY hour
+          SELECT CAST(strftime('%H', login_time) AS INTEGER) as hour, COUNT(*) as count
+          FROM login_history WHERE DATE(login_time) = ?
+          GROUP BY hour ORDER BY hour
         `)
         .bind(date)
         .all<HourlyCount>();
 
-      // Fill in missing hours with 0
       const hourlyMap = new Map(hourlyData.results?.map(h => [h.hour, h.count]) || []);
       const fullHourlyData: HourlyCount[] = [];
       for (let i = 0; i < 24; i++) {
-        fullHourlyData.push({
-          hour: i,
-          count: hourlyMap.get(i) || 0
-        });
+        fullHourlyData.push({ hour: i, count: hourlyMap.get(i) || 0 });
       }
 
       return NextResponse.json({
@@ -190,13 +155,9 @@ export async function GET(request: NextRequest) {
       });
     }
 
-    // Fallback to mock data for local development
+    // Fallback to mock data
     const mockData = generateMockData(date, limit);
-    
-    return NextResponse.json({
-      success: true,
-      ...mockData
-    });
+    return NextResponse.json({ success: true, ...mockData });
   } catch (error) {
     console.error('Error fetching login data:', error);
     return NextResponse.json(
