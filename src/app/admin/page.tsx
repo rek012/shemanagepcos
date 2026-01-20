@@ -52,6 +52,8 @@ export default function AdminDashboard() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [userEmail, setUserEmail] = useState('');
   const [userType, setUserType] = useState<'admin' | 'user' | ''>('');
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState('');
 
   // Check localStorage for existing authentication
   useEffect(() => {
@@ -69,75 +71,63 @@ export default function AdminDashboard() {
     }
   }, []);
 
-  // Mock data generation - Replace with actual API calls
+  // Fetch real data from D1 database
   useEffect(() => {
-    if (isAuthenticated) {
-      generateMockData();
+    if (isAuthenticated && userType === 'admin') {
+      fetchLoginData();
     }
-  }, [selectedDate, isAuthenticated]);
+  }, [selectedDate, isAuthenticated, userType]);
 
-  const generateMockData = () => {
-    const mockLogins: LoginData[] = [];
-    const now = new Date(selectedDate);
+  const fetchLoginData = async () => {
+    setIsLoading(true);
+    setError('');
     
-    // Generate 50 random logins
-    for (let i = 0; i < 50; i++) {
-      const randomHour = Math.floor(Math.random() * 24);
-      const randomMinute = Math.floor(Math.random() * 60);
-      const loginDate = new Date(now);
-      loginDate.setHours(randomHour, randomMinute, 0, 0);
+    try {
+      const response = await fetch(`/api/admin/logins?date=${selectedDate}&limit=50`);
       
-      mockLogins.push({
-        id: `login-${i}`,
-        userId: `user-${Math.floor(Math.random() * 20)}`,
-        username: `user${Math.floor(Math.random() * 100)}`,
-        email: `user${Math.floor(Math.random() * 100)}@example.com`,
-        loginTime: loginDate,
-        ipAddress: `192.168.${Math.floor(Math.random() * 255)}.${Math.floor(Math.random() * 255)}`,
-        device: ['Chrome', 'Firefox', 'Safari', 'Edge'][Math.floor(Math.random() * 4)]
-      });
+      if (!response.ok) {
+        throw new Error('Failed to fetch login data');
+      }
+      
+      const data = await response.json() as {
+        success: boolean;
+        logins: Array<{
+          id: string;
+          userId: string;
+          username: string;
+          email: string;
+          loginTime: string;
+          ipAddress: string;
+          device: string;
+        }>;
+        stats: LoginStats;
+        hourlyData: HourlyLogin[];
+      };
+      
+      if (data.success) {
+        // Transform the data to match the component's format
+        const transformedLogins = data.logins.map((login) => ({
+          id: login.id,
+          userId: login.userId,
+          username: login.username,
+          email: login.email,
+          loginTime: new Date(login.loginTime),
+          ipAddress: login.ipAddress,
+          device: login.device
+        }));
+        
+        setLogins(transformedLogins);
+        setStats(data.stats);
+        setHourlyData(data.hourlyData);
+      } else {
+        setError('Failed to load login data');
+      }
+    } catch (err) {
+      console.error('Error fetching login data:', err);
+      setError('Failed to load login data. Please try again.');
+    } finally {
+      setIsLoading(false);
     }
-
-    setLogins(mockLogins.sort((a, b) => b.loginTime.getTime() - a.loginTime.getTime()));
-
-    // Calculate stats
-    const today = new Date();
-    const todayLogins = mockLogins.filter(l => 
-      l.loginTime.toDateString() === today.toDateString()
-    ).length;
-
-    const weekAgo = new Date(today);
-    weekAgo.setDate(today.getDate() - 7);
-    const weekLogins = mockLogins.filter(l => l.loginTime >= weekAgo).length;
-
-    const monthAgo = new Date(today);
-    monthAgo.setMonth(today.getMonth() - 1);
-    const monthLogins = mockLogins.filter(l => l.loginTime >= monthAgo).length;
-
-    setStats({
-      total: mockLogins.length,
-      today: todayLogins,
-      thisWeek: weekLogins,
-      thisMonth: monthLogins
-    });
-
-    // Calculate hourly distribution
-    const hourly: { [key: number]: number } = {};
-    for (let i = 0; i < 24; i++) {
-      hourly[i] = 0;
-    }
-    
-    mockLogins.forEach(login => {
-      const hour = login.loginTime.getHours();
-      hourly[hour]++;
-    });
-
-    setHourlyData(
-      Object.entries(hourly).map(([hour, count]) => ({
-        hour: parseInt(hour),
-        count
-      }))
-    );
   };
 
   const formatTime = (date: Date) => {
@@ -234,7 +224,21 @@ export default function AdminDashboard() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {isAuthenticated && (
           <>
-            {activeTab === 'overview' && (
+            {/* Error Message */}
+            {error && (
+              <div className="mb-6 p-4 rounded-lg" style={{ backgroundColor: '#fee', border: '1px solid #fcc' }}>
+                <p style={{ color: '#c33' }}>{error}</p>
+              </div>
+            )}
+
+            {/* Loading State */}
+            {isLoading && (
+              <div className="flex justify-center items-center py-12">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2" style={{ borderColor: '#9B7EBD' }}></div>
+              </div>
+            )}
+
+            {activeTab === 'overview' && !isLoading && (
               <>
                 {/* Stats Cards */}
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">

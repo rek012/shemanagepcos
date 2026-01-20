@@ -12,6 +12,13 @@
 		"binding": "ASSETS",
 		"directory": ".open-next/assets"
 	},
+	"d1_databases": [
+		{
+			"binding": "dbbindings",
+			"database_name": "dbpcos",
+			"database_id": "597d5f78-dc58-4b76-9269-137a57204747"
+		}
+	],
 	"observability": {
 		"enabled": true
 	},

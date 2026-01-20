@@ -31,32 +31,46 @@ export default function Home() {
 		}
 	}, []);
 
-	const handleLogin = (e: React.FormEvent) => {
+	const handleLogin = async (e: React.FormEvent) => {
 		e.preventDefault();
 		setError('');
 
-		// Temporary login credentials
-		const validCredentials = [
-			{ email: 'admin@pcos.com', password: 'Admin@123', type: 'admin' as const },
-			{ email: 'user@pcos.com', password: 'User@123', type: 'user' as const }
-		];
+		try {
+			const response = await fetch('/api/auth/login', {
+				method: 'POST',
+				headers: {
+					'Content-Type': 'application/json',
+				},
+				body: JSON.stringify({ email, password }),
+			});
 
-		const user = validCredentials.find(
-			cred => cred.email === email && cred.password === password
-		);
+			const data = await response.json() as {
+				success: boolean;
+				user?: {
+					id: number;
+					email: string;
+					username: string;
+					userType: 'admin' | 'user';
+				};
+				error?: string;
+			};
 
-		if (user) {
-			setIsAuthenticated(true);
-			setUserEmail(email);
-			setUserType(user.type);
-			setShowLoginModal(false);
-			localStorage.setItem('isAuthenticated', 'true');
-			localStorage.setItem('userEmail', email);
-			localStorage.setItem('userType', user.type);
-			setEmail('');
-			setPassword('');
-		} else {
-			setError('Invalid email or password. Try admin@pcos.com / Admin@123 or user@pcos.com / User@123');
+			if (response.ok && data.success) {
+				setIsAuthenticated(true);
+				setUserEmail(data.user!.email);
+				setUserType(data.user!.userType);
+				setShowLoginModal(false);
+				localStorage.setItem('isAuthenticated', 'true');
+				localStorage.setItem('userEmail', data.user!.email);
+				localStorage.setItem('userType', data.user!.userType);
+				setEmail('');
+				setPassword('');
+			} else {
+				setError(data.error || 'Invalid email or password');
+			}
+		} catch (error) {
+			console.error('Login error:', error);
+			setError('Login failed. Please try again.');
 		}
 	};
 
@@ -145,17 +159,14 @@ export default function Home() {
 								/>
 							</div>
 
-							<div className="flex items-center justify-between">
-								<label className="flex items-center">
-									<input
-										type="checkbox"
-										className="w-4 h-4 text-pink-600 border-gray-300 rounded focus:ring-pink-500"
-									/>
-									<span className="ml-2 text-sm text-gray-600">Remember me</span>
-								</label>
-								<a href="#" className="text-sm text-pink-600 hover:text-pink-700 font-medium">
-									Forgot password?
-								</a>
+<div className="flex items-center">
+							<label className="flex items-center">
+								<input
+									type="checkbox"
+									className="w-4 h-4 text-pink-600 border-gray-300 rounded focus:ring-pink-500"
+								/>
+								<span className="ml-2 text-sm text-gray-600">Remember me</span>
+							</label>
 							</div>
 
 							<button

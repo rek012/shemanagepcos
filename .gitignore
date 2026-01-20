@@ -191,6 +191,10 @@ dist
 
 # End of https://www.toptal.com/developers/gitignore/api/macos,node,git
 
+# Copilot instructions and docs (local only)
+.github/copilot-instructions.md
+docs/
+
 ### Wrangler ###
 .wrangler/
 .env*
@@ -201,3 +205,4 @@ dist
 ### OpenNext ###
 .open-next/
 next-env.d.ts
+
