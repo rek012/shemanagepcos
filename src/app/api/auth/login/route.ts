@@ -1,13 +1,4 @@
 import { NextRequest, NextResponse } from 'next/server';
-import {
-  getDatabase,
-  authenticateUser,
-  recordLogin,
-  getClientIP,
-  getUserAgent,
-  AuthenticationError,
-  DatabaseError,
-} from '@/lib/db';
 
 export const runtime = 'edge';
 
@@ -18,6 +9,16 @@ interface LoginRequest {
 
 export async function POST(request: NextRequest) {
   try {
+    const {
+      getDatabase,
+      authenticateUser,
+      recordLogin,
+      getClientIP,
+      getUserAgent,
+      AuthenticationError,
+      DatabaseError,
+    } = await import('@/lib/db');
+
     // Parse and validate request body
     const body = await request.json() as LoginRequest;
     const { email, password } = body;
@@ -66,6 +67,8 @@ export async function POST(request: NextRequest) {
       },
     });
   } catch (error) {
+    const { AuthenticationError, DatabaseError } = await import('@/lib/db');
+
     // Handle specific error types
     if (error instanceof AuthenticationError) {
       return NextResponse.json(

@@ -81,16 +81,9 @@ async function getCloudflareContextSafe(): Promise<{ env?: Cloudflare.Env } & Re
     return ctx as { env: Cloudflare.Env } & Record<string, unknown>;
   }
 
-  try {
-    const mod = await import('@opennextjs/cloudflare');
-    if (typeof mod.getCloudflareContext === 'function') {
-      return await mod.getCloudflareContext({ async: true }) as { env?: Cloudflare.Env } & Record<string, unknown>;
-    }
-  } catch {
-    // Ignore and throw a friendly error below
-  }
-
-  throw new DatabaseError('D1 database binding not found. Check wrangler.jsonc configuration.');
+  throw new DatabaseError(
+    'D1 database binding not found. Ensure the Cloudflare context is initialized and wrangler.jsonc has the dbbindings binding.'
+  );
 }
 
 /**
