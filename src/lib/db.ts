@@ -1,4 +1,4 @@
-import { getCloudflareContext } from '@opennextjs/cloudflare';
+const cloudflareContextSymbol = Symbol.for('__cloudflare-context__');
 
 // ============================================================================
 // Types
@@ -39,36 +39,6 @@ export interface HourlyCount {
 }
 
 // ============================================================================
-// Database Connection
-// ============================================================================
-
-/**
- * Get D1 database instance from Cloudflare context
- * Throws an error if the database binding is not available
- */
-export async function getDatabase(): Promise<D1Database> {
-  const ctx = await getCloudflareContext();
-  const db = (ctx.env as Cloudflare.Env).dbbindings;
-  
-  if (!db) {
-    throw new DatabaseError('D1 database binding not found. Check wrangler.jsonc configuration.');
-  }
-  
-  return db;
-}
-
-/**
- * Get D1 database instance, returns null if not available (legacy support)
- */
-export async function getD1Database(): Promise<D1Database | null> {
-  try {
-    return await getDatabase();
-  } catch {
-    return null;
-  }
-}
-
-// ============================================================================
 // Custom Errors
 // ============================================================================
 
@@ -97,6 +67,55 @@ export class NotFoundError extends Error {
   constructor(message: string) {
     super(message);
     this.name = 'NotFoundError';
+  }
+}
+
+// ============================================================================
+// Database Connection
+// ============================================================================
+
+async function getCloudflareContextSafe(): Promise<{ env?: Cloudflare.Env } & Record<string, unknown>> {
+  const global = globalThis as typeof globalThis & Record<string | symbol, unknown>;
+  const ctx = global[cloudflareContextSymbol] as { env?: Cloudflare.Env } | undefined;
+  if (ctx?.env) {
+    return ctx as { env: Cloudflare.Env } & Record<string, unknown>;
+  }
+
+  try {
+    const mod = await import('@opennextjs/cloudflare');
+    if (typeof mod.getCloudflareContext === 'function') {
+      return await mod.getCloudflareContext({ async: true }) as { env?: Cloudflare.Env } & Record<string, unknown>;
+    }
+  } catch {
+    // Ignore and throw a friendly error below
+  }
+
+  throw new DatabaseError('D1 database binding not found. Check wrangler.jsonc configuration.');
+}
+
+/**
+ * Get D1 database instance from Cloudflare context
+ * Throws an error if the database binding is not available
+ */
+export async function getDatabase(): Promise<D1Database> {
+  const ctx = await getCloudflareContextSafe();
+  const db = (ctx.env as Cloudflare.Env | undefined)?.dbbindings;
+
+  if (!db) {
+    throw new DatabaseError('D1 database binding not found. Check wrangler.jsonc configuration.');
+  }
+
+  return db;
+}
+
+/**
+ * Get D1 database instance, returns null if not available (legacy support)
+ */
+export async function getD1Database(): Promise<D1Database | null> {
+  try {
+    return await getDatabase();
+  } catch {
+    return null;
   }
 }
 
