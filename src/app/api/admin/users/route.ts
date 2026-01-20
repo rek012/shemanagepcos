@@ -1,42 +1,38 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getCloudflareContext } from '@opennextjs/cloudflare';
+import {
+  getDatabase,
+  getAllUsers,
+  createUser,
+  updateUser,
+  deleteUser,
+  DatabaseError,
+  ValidationError,
+  NotFoundError,
+} from '@/lib/db';
 
 export const runtime = 'edge';
-
-interface User {
-  id: number;
-  email: string;
-  username: string;
-  user_type: 'admin' | 'user';
-  created_at: string;
-}
-
-async function getDatabase(): Promise<D1Database> {
-  const ctx = await getCloudflareContext();
-  const db = (ctx.env as { dbbindings?: D1Database }).dbbindings;
-  if (!db) {
-    throw new Error('D1 database binding not found');
-  }
-  return db;
-}
 
 // GET all users
 export async function GET() {
   try {
     const db = await getDatabase();
-
-    const users = await db
-      .prepare('SELECT id, email, username, user_type, created_at FROM users ORDER BY created_at DESC')
-      .all<User>();
+    const users = await getAllUsers(db);
 
     return NextResponse.json({
       success: true,
-      users: users.results || []
+      users,
     });
   } catch (error) {
+    if (error instanceof DatabaseError) {
+      return NextResponse.json(
+        { success: false, error: error.message },
+        { status: 503 }
+      );
+    }
+
     console.error('Error fetching users:', error);
     return NextResponse.json(
-      { error: 'Failed to fetch users', details: String(error) },
+      { success: false, error: 'Failed to fetch users' },
       { status: 500 }
     );
   }
@@ -54,43 +50,62 @@ export async function POST(request: NextRequest) {
 
     const { email, password, username, userType } = body;
 
+    // Validate required fields
     if (!email || !password || !username) {
       return NextResponse.json(
-        { error: 'Email, password, and username are required' },
+        { success: false, error: 'Email, password, and username are required' },
+        { status: 400 }
+      );
+    }
+
+    // Validate email format
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      return NextResponse.json(
+        { success: false, error: 'Invalid email format' },
+        { status: 400 }
+      );
+    }
+
+    // Validate password strength (at least 6 characters)
+    if (password.length < 6) {
+      return NextResponse.json(
+        { success: false, error: 'Password must be at least 6 characters' },
         { status: 400 }
       );
     }
 
     const db = await getDatabase();
-
-    // Check if user already exists
-    const existingUser = await db
-      .prepare('SELECT id FROM users WHERE email = ?')
-      .bind(email)
-      .first();
-
-    if (existingUser) {
-      return NextResponse.json(
-        { error: 'User with this email already exists' },
-        { status: 409 }
-      );
-    }
-
-    // Insert new user
-    const result = await db
-      .prepare('INSERT INTO users (email, password, username, user_type) VALUES (?, ?, ?, ?)')
-      .bind(email, password, username, userType || 'user')
-      .run();
+    const userId = await createUser(db, {
+      email: email.toLowerCase().trim(),
+      password,
+      username: username.trim(),
+      user_type: userType,
+    });
 
     return NextResponse.json({
       success: true,
       message: 'User created successfully',
-      userId: result.meta.last_row_id
+      userId,
     });
   } catch (error) {
+    if (error instanceof ValidationError) {
+      return NextResponse.json(
+        { success: false, error: error.message },
+        { status: 409 }
+      );
+    }
+
+    if (error instanceof DatabaseError) {
+      return NextResponse.json(
+        { success: false, error: error.message },
+        { status: 503 }
+      );
+    }
+
     console.error('Error creating user:', error);
     return NextResponse.json(
-      { error: 'Failed to create user', details: String(error) },
+      { success: false, error: 'Failed to create user' },
       { status: 500 }
     );
   }
@@ -111,57 +126,60 @@ export async function PUT(request: NextRequest) {
 
     if (!id) {
       return NextResponse.json(
-        { error: 'User ID is required' },
+        { success: false, error: 'User ID is required' },
+        { status: 400 }
+      );
+    }
+
+    // Validate email format if provided
+    if (email) {
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(email)) {
+        return NextResponse.json(
+          { success: false, error: 'Invalid email format' },
+          { status: 400 }
+        );
+      }
+    }
+
+    // Validate password strength if provided
+    if (password && password.length < 6) {
+      return NextResponse.json(
+        { success: false, error: 'Password must be at least 6 characters' },
         { status: 400 }
       );
     }
 
     const db = await getDatabase();
+    await updateUser(db, id, {
+      email: email?.toLowerCase().trim(),
+      password,
+      username: username?.trim(),
+      user_type: userType,
+    });
 
-    // Build update query dynamically
-    const updates: string[] = [];
-    const values: (string | number)[] = [];
-
-    if (email) {
-      updates.push('email = ?');
-      values.push(email);
-    }
-    if (password) {
-      updates.push('password = ?');
-      values.push(password);
-    }
-    if (username) {
-      updates.push('username = ?');
-      values.push(username);
-    }
-    if (userType) {
-      updates.push('user_type = ?');
-      values.push(userType);
-    }
-    
-    updates.push('updated_at = CURRENT_TIMESTAMP');
-    values.push(id);
-
-    if (updates.length === 1) {
+    return NextResponse.json({
+      success: true,
+      message: 'User updated successfully',
+    });
+  } catch (error) {
+    if (error instanceof ValidationError) {
       return NextResponse.json(
-        { error: 'No fields to update' },
+        { success: false, error: error.message },
         { status: 400 }
       );
     }
 
-    await db
-      .prepare(`UPDATE users SET ${updates.join(', ')} WHERE id = ?`)
-      .bind(...values)
-      .run();
+    if (error instanceof DatabaseError) {
+      return NextResponse.json(
+        { success: false, error: error.message },
+        { status: 503 }
+      );
+    }
 
-    return NextResponse.json({
-      success: true,
-      message: 'User updated successfully'
-    });
-  } catch (error) {
     console.error('Error updating user:', error);
     return NextResponse.json(
-      { error: 'Failed to update user', details: String(error) },
+      { success: false, error: 'Failed to update user' },
       { status: 500 }
     );
   }
@@ -171,43 +189,55 @@ export async function PUT(request: NextRequest) {
 export async function DELETE(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
-    const userId = searchParams.get('id');
+    const userIdParam = searchParams.get('id');
 
-    if (!userId) {
+    if (!userIdParam) {
       return NextResponse.json(
-        { error: 'User ID is required' },
+        { success: false, error: 'User ID is required' },
+        { status: 400 }
+      );
+    }
+
+    const userId = parseInt(userIdParam, 10);
+    if (isNaN(userId)) {
+      return NextResponse.json(
+        { success: false, error: 'Invalid user ID' },
         { status: 400 }
       );
     }
 
     const db = await getDatabase();
+    await deleteUser(db, userId);
 
-    // Don't allow deleting the default admin
-    const user = await db
-      .prepare('SELECT email FROM users WHERE id = ?')
-      .bind(parseInt(userId))
-      .first<{ email: string }>();
-
-    if (user?.email === 'admin@pcos.com') {
+    return NextResponse.json({
+      success: true,
+      message: 'User deleted successfully',
+    });
+  } catch (error) {
+    if (error instanceof NotFoundError) {
       return NextResponse.json(
-        { error: 'Cannot delete the default admin user' },
+        { success: false, error: error.message },
+        { status: 404 }
+      );
+    }
+
+    if (error instanceof ValidationError) {
+      return NextResponse.json(
+        { success: false, error: error.message },
         { status: 403 }
       );
     }
 
-    await db
-      .prepare('DELETE FROM users WHERE id = ?')
-      .bind(parseInt(userId))
-      .run();
+    if (error instanceof DatabaseError) {
+      return NextResponse.json(
+        { success: false, error: error.message },
+        { status: 503 }
+      );
+    }
 
-    return NextResponse.json({
-      success: true,
-      message: 'User deleted successfully'
-    });
-  } catch (error) {
     console.error('Error deleting user:', error);
     return NextResponse.json(
-      { error: 'Failed to delete user', details: String(error) },
+      { success: false, error: 'Failed to delete user' },
       { status: 500 }
     );
   }

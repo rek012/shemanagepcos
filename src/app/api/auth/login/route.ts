@@ -1,97 +1,91 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getCloudflareContext } from '@opennextjs/cloudflare';
+import {
+  getDatabase,
+  authenticateUser,
+  recordLogin,
+  getClientIP,
+  getUserAgent,
+  AuthenticationError,
+  DatabaseError,
+} from '@/lib/db';
 
 export const runtime = 'edge';
 
-interface User {
-  id: number;
+interface LoginRequest {
   email: string;
   password: string;
-  username: string;
-  user_type: 'admin' | 'user';
-}
-
-async function getDatabase(): Promise<D1Database> {
-  const ctx = await getCloudflareContext();
-  const db = (ctx.env as { dbbindings?: D1Database }).dbbindings;
-  if (!db) {
-    throw new Error('D1 database binding not found');
-  }
-  return db;
-}
-
-function parseDevice(userAgent: string): string {
-  if (userAgent.includes('Chrome') && !userAgent.includes('Edg')) {
-    return 'Chrome';
-  } else if (userAgent.includes('Firefox')) {
-    return 'Firefox';
-  } else if (userAgent.includes('Safari') && !userAgent.includes('Chrome')) {
-    return 'Safari';
-  } else if (userAgent.includes('Edg')) {
-    return 'Edge';
-  } else if (userAgent.includes('Opera') || userAgent.includes('OPR')) {
-    return 'Opera';
-  }
-  return 'Other';
 }
 
 export async function POST(request: NextRequest) {
   try {
-    const { email, password } = await request.json() as { email: string; password: string };
+    // Parse and validate request body
+    const body = await request.json() as LoginRequest;
+    const { email, password } = body;
 
     if (!email || !password) {
       return NextResponse.json(
-        { error: 'Email and password are required' },
+        { success: false, error: 'Email and password are required' },
         { status: 400 }
       );
     }
 
-    const db = await getDatabase();
-
-    const user = await db
-      .prepare('SELECT id, email, password, username, user_type FROM users WHERE email = ?')
-      .bind(email)
-      .first<User>();
-
-    if (!user || user.password !== password) {
+    // Validate email format
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
       return NextResponse.json(
-        { error: 'Invalid email or password' },
-        { status: 401 }
+        { success: false, error: 'Invalid email format' },
+        { status: 400 }
       );
     }
 
-    // Record login in history
-    const ipAddress = request.headers.get('x-forwarded-for') || 
-                      request.headers.get('cf-connecting-ip') || 
-                      'unknown';
-    const userAgent = request.headers.get('user-agent') || 'unknown';
-    const device = parseDevice(userAgent);
+    // Get database connection
+    const db = await getDatabase();
+
+    // Authenticate user
+    const user = await authenticateUser(db, email.toLowerCase().trim(), password);
+
+    // Record login history (non-blocking, continue even if it fails)
+    const ipAddress = getClientIP(request.headers);
+    const userAgent = getUserAgent(request.headers);
 
     try {
-      await db
-        .prepare(
-          'INSERT INTO login_history (user_id, username, email, ip_address, device, user_agent) VALUES (?, ?, ?, ?, ?, ?)'
-        )
-        .bind(user.id, user.username, user.email, ipAddress, device, userAgent)
-        .run();
+      await recordLogin(db, user, { ip_address: ipAddress, user_agent: userAgent });
     } catch (historyError) {
       console.error('Failed to record login history:', historyError);
-      // Continue even if history recording fails
+      // Continue - login history is non-critical
     }
 
+    // Return success response
     return NextResponse.json({
       success: true,
       user: {
         id: user.id,
         email: user.email,
         username: user.username,
-        userType: user.user_type
-      }
+        userType: user.user_type,
+      },
     });
   } catch (error) {
+    // Handle specific error types
+    if (error instanceof AuthenticationError) {
+      return NextResponse.json(
+        { success: false, error: error.message },
+        { status: 401 }
+      );
+    }
+
+    if (error instanceof DatabaseError) {
+      console.error('Database error during login:', error);
+      return NextResponse.json(
+        { success: false, error: 'Service temporarily unavailable' },
+        { status: 503 }
+      );
+    }
+
+    // Handle unexpected errors
     console.error('Login error:', error);
     return NextResponse.json(
-      { error: 'Login failed', details: String(error) },
+      { success: false, error: 'An unexpected error occurred' },
       { status: 500 }
     );
   }
